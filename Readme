@@ -1,0 +1,72 @@
+.___________. _______ .___  ___.      ___          ____   
+|           ||   ____||   \/   |     /   \        |___ \  
+`---|  |----`|  |__   |  \  /  |    /  ^  \         __) | 
+    |  |     |   __|  |  |\/|  |   /  /_\  \       |__ <  
+    |  |     |  |____ |  |  |  |  /  _____  \      ___) | 
+    |__|     |_______||__|  |__| /__/     \__\    |____/  
+
+Nume:    Maftei Stefan - Radu
+Grupa:   336CC
+Materie: APD
+
+
+=== Implementarea ===
+
+	Pentru citirea si scrierea fisierelor .pgm am creat un fisier process_pgm.h
+in care exista o structura de date pentru retinerea informatiilor dintr-un
+astfel de fisier.
+	Fisierele .pgm sunt citite cu tot cu comentarii (care sunt retinute),
+whitespace-urile fiind inlocuite cu '\n'. Va rezulta un fisier "aux.pgm" care
+are un format doar cu datele utile ale imaginii (fara comentarii) in care toate
+whitespace-urile sunt '\n'. Apoi se citeste rand cu rand fiecare valoare din
+fisierul .pgm, iar fisierul auxiliar creat este sters.
+	Pentru scriere se foloseste structura de date unde sunt retinute
+informatiile despre .pgm (inclusiv comentariile) si se creeaza un fisier .pgm
+cu numele specificat.
+
+	In fisierul filtru.c se afla prelucrarea imaginilor in mod distribuit
+intre procese aflate sub o anumita topologie. Intai fiecare proces citeste
+vecinii din fisierul cu topologia. Fiecare proces are o structura de date in
+care se afla o lista a copiilor, parintele procesului si dimensiunea listei. La
+inceput niciun proces nu are parinte.
+	Procesul 0 are rol de initiator (el este radacina topologiei). Acesta va
+citi numarul de prelucrari care vor avea loc. Apoi va incepe sa comunice cu
+restul topologiei pana cand vor fi prelucrate toate imaginile cu filtrele
+corespunzatoare; la final se trimite un mesaj de terminare.
+	Pana la terminare initiatorul citeste fiecare rand din fisierul cu sarcini,
+citeste imaginea .pgm si sectioneaza datele in mod egal la toti copiii, trimitand
+valorile pentru alocarea unei matrici reprezentate printr-un vector si tag-ul
+corespunzator filtrului de aplicat.
+	Apoi toate procesele asteapta mesaj de la parinte. La inceput parintele
+este necunoscut, deci sursa de unde vor primi mesajul va fi parintele,
+acesta fiind retinut si scos din lista de copii ai proceselor. La randul lor,
+procesele care mai au inca copii trimit datele pentru alocarea vectorului.
+Procesele care au lista de copii vida sunt worker-ii, adica procesele care
+efectueaza aplicarea filtrelor.
+	Dupa ce toate procesele si-au alocat vectorul pentru date, se reia prin
+acelasi procedeu si trimiterea datelor efective de prelucrat care vor fi
+salvate in vectorul de date. Odata ajunse datele la workeri, acestia incep
+aplicarea filtrului indicat de tag. Procesele worker contorizeaza numarul de
+linii prelucrate intr-un vector statistica. Vectorul rezultat este trimis
+parintelui fiecarui proces worker. Parintii combina acesti vectori rezultati si
+trimit, la randul lor, vectorul calculat parintilor acestora pana ce toata
+informatia ajunge la procesul initiator 0, care va avea vectorul cu toate
+datele prelucrate. Aici procesul initiator 0 scrie fisierul .pgm rezultat.
+	Odata ce au fost aplicate toate filtrele mentionate in fisierul de sarcini,
+procesul initiator 0 trimite tag-ul de terminare proceselor copii in aceeasi
+maniera ca mai inainte, iar toate procesele vor iesi din ciclul in care se
+prelucrau poze. In acest moment procesele worker trimit statistica parintilor
+in aceeasi maniera ca mai sus. Parintii combina statisticile copiilor si o
+trimit, la randul lor, parintilor acestora pana cand statistica ajunge la
+procesul initiator 0. Acesta scrie intr-un fisier de statistica numarul de
+linii prelucrate de fiecare proces (doar procesele worker vor avea valori
+diferite de zero). Apoi programul se incheie (toata memoria alocata este
+eliberata corespunzator).
+
+=== Testarea ===
+
+	Programul a fost testat pe coada campus-haswell.q cu input-ul
+imagini.in (format din 42 de aplicari de filtre) folosind ambele
+topologii puse la dispozitie.
+	De asemenea a fost testat si smoke_test-ul atat local, cat si
+pe fep.grid.pub.ro, tot pe coada campus-haswell.q.
